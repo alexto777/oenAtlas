@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Tareas del Usuario</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding:20px; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:left; }
+    th { background:#f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>Tareas del usuario</h1>
+
+  <label>Usuario ID: <input id="usuarioId" value="1" style="width:60px"/></label>
+  <button id="btnCargar">Cargar tareas</button>
+
+  <div id="info"></div>
+  <table id="tabla" style="display:none">
+    <thead>
+      <tr><th>Tarea</th><th>Proyecto</th><th>Horas</th><th>Tarifa</th><th>Valor</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API = 'http://localhost:3000';
+    const btn = document.getElementById('btnCargar');
+    const tabla = document.getElementById('tabla');
+    const tbody = tabla.querySelector('tbody');
+    const info = document.getElementById('info');
+
+    btn.onclick = async () => {
+      const id = document.getElementById('usuarioId').value || '1';
+      info.textContent = 'Cargando...';
+      try {
+        const res = await fetch(`${API}/usuarios/${id}/tareas`);
+        if (!res.ok) throw new Error('Error en la API: ' + res.status);
+        const datos = await res.json();
+        tbody.innerHTML = '';
+        if (datos.length === 0) {
+          info.textContent = 'No hay tareas para este usuario.';
+          tabla.style.display = 'none';
+          return;
+        }
+        datos.forEach(t => {
+          const tr = document.createElement('tr');
+          const tarifa = t.tarifa ?? 'Sin tarifa';
+          const valor = (t.valor === null) ? 'Sin valor' : t.valor;
+          tr.innerHTML = `
+            <td>${escapeHtml(t.titulo ?? t.descripcion ?? '')}</td>
+            <td>${escapeHtml(t.proyecto?.nombre ?? '')}</td>
+            <td>${t.horas ?? '-'}</td>
+            <td>${tarifa}</td>
+            <td>${valor}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        tabla.style.display = '';
+        info.textContent = '';
+      } catch (e) {
+        info.textContent = 'Error: ' + e.message;
+        tabla.style.display = 'none';
+      }
+    };
+
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  </script>
+</body>
+</html>
